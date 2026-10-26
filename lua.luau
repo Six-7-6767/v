@@ -56,7 +56,7 @@ SixSeven["6"]["Padding"] = UDim.new(0, 5);
 SixSeven["6"]["SortOrder"] = Enum.SortOrder.LayoutOrder;
 
 
--- StarterGui.SixSevenGUI-2.SixSeven67.SixSeven.ScrollingFrame.ouhgbw
+-- StarterGui.SixSevenGUI-2.SixSeven67.SixSeven.ScrollingFrame.lkkfmgdnggf
 SixSeven["7"] = Instance.new("TextButton", SixSeven["5"]);
 SixSeven["7"]["TextWrapped"] = true;
 SixSeven["7"]["BorderSizePixel"] = 0;
@@ -68,11 +68,11 @@ SixSeven["7"]["FontFace"] = Font.new([[rbxasset://fonts/families/Ubuntu.json]], 
 SixSeven["7"]["BackgroundTransparency"] = 1;
 SixSeven["7"]["Size"] = UDim2.new(1, 0, 0.13158, 0);
 SixSeven["7"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
-SixSeven["7"]["Text"] = [[test6767duhfg']];
-SixSeven["7"]["Name"] = [[ouhgbw]];
+SixSeven["7"]["Text"] = [[AutoShoot]];
+SixSeven["7"]["Name"] = [[lkkfmgdnggf]];
 
 
--- StarterGui.SixSevenGUI-2.SixSeven67.SixSeven.ScrollingFrame.ouhgbw.LocalScript
+-- StarterGui.SixSevenGUI-2.SixSeven67.SixSeven.ScrollingFrame.lkkfmgdnggf.LocalScript
 SixSeven["8"] = Instance.new("LocalScript", SixSeven["7"]);
 
 
@@ -223,11 +223,10 @@ SixSeven["17"] = Instance.new("LocalScript", SixSeven["15"]);
 SixSeven["17"]["Name"] = [[CloseButton]];
 
 
--- StarterGui.SixSevenGUI-2.SixSeven67.SixSeven.ScrollingFrame.ouhgbw.LocalScript
+-- StarterGui.SixSevenGUI-2.SixSeven67.SixSeven.ScrollingFrame.lkkfmgdnggf.LocalScript
 local function C_8()
 local script = SixSeven["8"];
 	local Players = game:GetService("Players")
-	local RunService = game:GetService("RunService")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	
 	local button = script.Parent
@@ -240,9 +239,14 @@ local script = SixSeven["8"];
 	local Camera = workspace.CurrentCamera
 	local Event = ReplicatedStorage:WaitForChild("Bunker"):WaitForChild("Action")
 	
-	local MAX_RANGE = 100 -- range
-	local FIRE_RATE = 0.5 -- fire rate
+	local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+	local BunkerHUD = PlayerGui:WaitForChild("BunkerHUD")
+	local AmmoTextLabel = BunkerHUD:WaitForChild("Ammo"):WaitForChild("Count")
+	
+	local MAX_RANGE = 100 
+	local FIRE_RATE = 0.5
 	local lastShotTime = 0
+	local isReloading = false
 	
 	local function getClosestEnemy()
 		local closestEnemy = nil
@@ -256,7 +260,6 @@ local script = SixSeven["8"];
 	
 				if humanoid and rootPart and humanoid.Health > 0 then
 					local distance = (rootPart.Position - myPosition).Magnitude
-	
 					if distance <= shortestDistance then
 						shortestDistance = distance
 						closestEnemy = rootPart
@@ -264,8 +267,13 @@ local script = SixSeven["8"];
 				end
 			end
 		end
-	
 		return closestEnemy
+	end
+	
+	local function getCurrentAmmo()
+		local text = AmmoTextLabel.Text
+		local currentAmmo = tonumber(string.match(text, "^(%d+)"))
+		return currentAmmo or 0
 	end
 	
 	local function shootAtTarget(targetPart)
@@ -284,6 +292,16 @@ local script = SixSeven["8"];
 		Event:FireServer("Shoot", payload)
 	end
 	
+	local function reloadWeapon()
+		if isReloading then return end
+		isReloading = true
+	
+		Event:FireServer("Reload", {})
+	
+		task.wait(2) 
+		isReloading = false
+	end
+	
 	local function onButtonClicked()
 		isActive = not isActive
 	
@@ -292,13 +310,19 @@ local script = SixSeven["8"];
 	
 			task.spawn(function()
 				while isActive do
-					if os.clock() - lastShotTime >= FIRE_RATE then
-						local target = getClosestEnemy()
-						if target then
-							lastShotTime = os.clock()
-							shootAtTarget(target)
+					local ammo = getCurrentAmmo()
+					if ammo <= 0 then
+						reloadWeapon()
+					else
+						if os.clock() - lastShotTime >= FIRE_RATE then
+							local target = getClosestEnemy()
+							if target then
+								lastShotTime = os.clock()
+								shootAtTarget(target)
+							end
 						end
 					end
+	
 					task.wait()
 				end
 			end)
